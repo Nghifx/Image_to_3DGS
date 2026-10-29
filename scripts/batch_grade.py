@@ -22,7 +22,9 @@ ROOT = os.environ.get("GSPLAT_ROOT", "E:/DEV/GSplatStudio/Gaussian_Splatting").r
 # blue screen as Genjutsu renders it (006b, 2026-10-28): hue 197-212 deg, saturation 0.55-1, median RGB below
 SCREEN_HUE = (185, 225)
 SCREEN_RGB = (0.184, 0.49, 0.631)   # sRGB, 006b; replaced by chars/<id>/screen_rgb.json (batch_dataset.py screen)
-EDGE_SOFT_PX = 6.0   # gaussian blur of the matte at 1080 wide (CEO 2026-10-28: soft edge, a blue rim is cleaned later)
+EDGE_SOFT_PX = float(os.environ.get("EDGE_SOFT_PX", 2.0))   # gaussian blur of the matte at 1080 wide. 6 (006b,
+#   2026-10-28) left a fuzz of half-clear edge pixels each view drew differently: jagged splat outlines on 0751 (CEO
+#   2026-10-29: harder edge). The per-video screen colour keeps the blue rim away now
 CHOKE_PX = 0         # 006b choked 4 px and ate her skirt; leftover screen splats are cheaper to trim than lost cloth
 GUIDE_IN_PX = 12     # the AI guide's edge wanders a few px; 12 px in it is surely her
 GUIDE_OUT_PX = 10    # hair and fingers the guide clipped still get the key; crosses further out are dropped

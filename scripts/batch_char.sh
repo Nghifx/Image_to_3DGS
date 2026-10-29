@@ -7,7 +7,8 @@
 # 4  Houdini COP: matte + choke 5 px + the plate grade -> chars/<id>/graded   (batch_grade.py)
 # 5  train 50k steps on graded frames + COLMAP cameras, carve the person out -> GSplats/c<id>/person/
 # Blue-screen video (Electra v018 path): MATTE=key bash scripts/batch_char.sh <id>  - no LTX, no cloud: a local AI
-# guide (batch_dataset.py guide) + the chroma key in the Houdini net (batch_grade.py key).
+# guide (batch_dataset.py guide) + the chroma key in the Houdini net (batch_grade.py key), then COLMAP on her alone
+# (batch_dataset.py masked + gs_colmap_ai.py, full size).
 # Log: chars/<id>/batch.log. Each step skips itself if its output is already there, so a rerun resumes.
 set -e
 cid=$1
@@ -38,9 +39,10 @@ if [ ! -f "$C/frames/0001.png" ]; then
 fi
 echo "frames: $(ls "$C/frames" | wc -l)"
 
-# 3a COLMAP with the background (background job)
+# 3a COLMAP with the background (background job) - LTX route only. The blue-screen route solves on her alone after
+# the key (step 4): the AI-drawn room drifts against her (0751, 2026-10-29: room solve 21 dB ghosted, her 27.7 dB)
 (
-    if [ ! -f "colmap/${N}_raw/sparse/0/images.bin" ]; then
+    if [ "${MATTE:-ltx}" != key ] && [ ! -f "colmap/${N}_raw/sparse/0/images.bin" ]; then
         "$PY" scripts/batch_dataset.py raw "$cid"
         "$PY" scripts/gs_colmap_ai.py "${N}_raw" --keep-bg 2>&1 | grep -v GSS_PROGRESS | tail -3
     fi
@@ -78,12 +80,17 @@ echo "alpha: $(ls "$C/alpha" | wc -l)"
 [ "$(ls "$C/alpha" | wc -l)" -ge "$(ls "$C/frames" | wc -l)" ] || { echo "matte incomplete - stopping"; exit 1; }
 fi
 wait $colmap_job
-echo "colmap: $(ls colmap/${N}_raw/sparse/0)"
 
-# 4 grade + matte in Houdini
+# 4 grade + matte in Houdini, then the cameras
 KEY_ARG=$([ "${MATTE:-ltx}" = key ] && echo key || true)
 [ -f "$C/graded/0001.png" ] || "$H" scripts/batch_grade.py "$cid" $KEY_ARG 2>&1 | grep -E "graded|Error"
-"$PY" scripts/batch_dataset.py final "$cid"
+if [ "${MATTE:-ltx}" = key ]; then
+    "$PY" scripts/batch_dataset.py masked "$cid"
+    [ -f "colmap/$N/sparse/0/images.bin" ] || "$PY" scripts/gs_colmap_ai.py "$N" 2>&1 | grep -v GSS_PROGRESS | tail -3
+else
+    echo "colmap: $(ls colmap/${N}_raw/sparse/0)"
+    "$PY" scripts/batch_dataset.py final "$cid"
+fi
 
 # 5 train + carve
 if ! ls GSplats/$N/*/gsplats/*.49999.ply >/dev/null 2>&1; then

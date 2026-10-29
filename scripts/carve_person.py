@@ -23,6 +23,7 @@ MIN_VIEWS = 12     # views that must see a splat before it is trusted
 VIEW_STEP = 3      # use every 3rd view
 MAX_SIZE = 0.15    # largest splat axis, as a fraction of her height (0.04 dropped the big dark splats of a black skirt)
 CYL_R = 0.5        # metres round her axis once upright (A-pose hands reach ~0.45)
+FLOOR_CUT = float(os.environ.get("CARVE_FLOOR_CUT", 0.03))   # metres: dark splats below this are floor marks
 MIN_ALPHA = 0.0    # was 0.05: a dark velvet skirt is many faint layers, dropping them punched holes (c003h3, 2026-10-27);
 #                    training with alpha supervision leaves no room behind her, so faint splats are hers
 # a splat whose blob pokes past the matte edge is the smeared rim (white/blue fuzz on 006b2's sleeves and cap,
@@ -137,7 +138,12 @@ R =np.stack([np.cross(up, fwd), up, fwd])
 U = scale * (P[idx] - foot) @ R.T
 alpha = 1 / (1 + np.exp(-data[idx, col["opacity"]]))
 inbox = (np.hypot(U[:, 0], U[:, 2]) < CYL_R) & (U[:, 1] > 0.0) & (U[:, 1] < H * 1.08) & (alpha > MIN_ALPHA)
-print(f"cylinder/opacity trim: {len(idx)} -> {inbox.sum()}")
+# floor crosses keyed in with her feet (black, flat on the floor, 0751 2026-10-29): dark splats in the bottom
+# FLOOR_CUT metres go. Her bare feet are skin-coloured and the hem hangs higher, so neither is touched
+dc = 0.5 + 0.28209479 * data[idx][:, [col["f_dc_0"], col["f_dc_1"], col["f_dc_2"]]]
+floor_dark = (U[:, 1] < FLOOR_CUT) & (dc.max(1) < 0.2)
+inbox &= ~floor_dark
+print(f"cylinder/opacity trim: {len(idx)} -> {inbox.sum()} ({int(floor_dark.sum())} dark splats on the floor)")
 idx = idx[inbox]
 
 with open(ply_out, "wb") as f:

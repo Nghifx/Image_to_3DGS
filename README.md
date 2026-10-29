@@ -4,7 +4,7 @@ Bien 1 video AI (nhan vat dung yen tren phong xanh, camera bay quanh) thanh 1 nh
 dung duoc trong shot VFX, chay tren Houdini 22 + GPU NVIDIA, Windows.
 
 ```
-Electra ref video ──> Genjutsu (Higgsfield) ──> loc anh net ──> COLMAP ──> tach nen xanh ──> train 3DGS
+Electra ref video ──> Genjutsu (Higgsfield) ──> loc anh net ──> tach nen xanh ──> COLMAP tren nguoi ──> train 3DGS
                                                                                           └─> cat nguoi 3D
                                                     Fixer cac goc it quay <── render goc moi <─┘
                                                             └──> train lai ──> nhan vat GS cuoi
@@ -19,10 +19,10 @@ Electra ref video ──> Genjutsu (Higgsfield) ──> loc anh net ──> COLM
 | Video tham chieu | Hinh nom Electra tren phong xanh co dau cong do, camera zig-zag tu thap len **cham tren dinh dau**, 3 giay cuoi vong ra sau lung, tay khep 15 do. 20 giay. | Shot boom-up nhin tu tren xuong, nen goc tren dinh dau quan trong nhat. Camera di deu theo **toc do xoay khung hinh** (khong theo quang duong) nen o dinh dau khong bi nhoe chuyen dong. |
 | Video nhan vat | Genjutsu Lite (Higgsfield) chep chuyen dong camera tu video tham chieu, 6 anh tham chieu (4 goc trang phuc, chan dung, chan tran). | Nhan vat dung yen nhu tuong sap, nen GS hoc duoc. |
 | Loc anh | `pick_frames.py`: chi giu anh **net** (Laplacian so voi cac khung xung quanh), moi anh **trung anh truoc 50-62 %** dien tich, du cac goc. 20 giay -> ~160 anh. | It anh hon nhung toan anh tot: COLMAP nhanh, khong co anh nhoe lam ban GS. |
-| Dung camera | COLMAP (pycolmap) tren anh co ca phong (`--keep-bg`), chay o **720** roi nhan camera len kich thuoc goc. | Phong xanh + dau cong cho camera chinh xac nhat; 720 nhanh gap nhieu lan ma camera van dung. |
-| Tach nen | Chroma key xanh trong Houdini COP, **tu do mau nen cua tung video**, AI (rembg) lam huong dan de giu vai/hoa van xanh. Mep mem 6 px. | Da thu train **khong tach nen**: dep o goc anh nhung khong cat duoc nguoi ra sach (ao trang lan vao nen xanh). Van can tach nen. |
+| Dung camera | COLMAP (pycolmap) **chi tren nguoi** (sau khi tach nen), du do phan giai goc 1080. | Phong xanh do AI ve bi "troi" so voi nguoi (nep vai ve lai moi khung): dung theo phong ra ong kinh sai 30 %, GS bong doi (21 dB). Dung theo nguoi: GS net (27.7 dB). |
+| Tach nen | Chroma key xanh trong Houdini COP, **tu do mau nen cua tung video**, AI (rembg) lam huong dan de giu vai/hoa van xanh. Mep 2 px. Don mask tu dong: bo tuong xanh dam lot vao, cat dau cong dinh mong vao chan, chi giu vung mask lon nhat. | Da thu train **khong tach nen**: dep o goc anh nhung khong cat duoc nguoi ra sach (ao trang lan vao nen xanh). Van can tach nen. |
 | Train | Houdini 22 ML (gsplat) tren anh goc 1080, 50.000 buoc. | |
-| Cat nguoi 3D | `carve_person.py`: giu splat nam trong mask o >= 85 % goc nhin, cat tru tru quanh nguoi, dung nguoi day cao 1.6 m. **Khong "got mep"** (an mat ban tay). | |
+| Cat nguoi 3D | `carve_person.py`: giu splat nam trong mask o >= 85 % goc nhin, cat tru tru quanh nguoi, bo manh toi sat san (< 3 cm: dau cong dinh mep vay), dung nguoi day cao 1.6 m. **Khong "got mep"** (an mat ban tay). | Mep mem 6 px de lai lop vien lom chom tren GS; mep 2 px + don mask: het vien xanh ngoc va dom den duoi chan. |
 | Fixer | Render GS o 2 vong goc video it quay (quanh dinh dau 55/75 do; nua sau lung ngang tam mat), **NVIDIA Fixer** (Cosmos 0.6B) lam sach, cho vao train lai (kieu Difix3D+). Khong dua goc phia truoc vao (da quay du, Fixer chi lam mem mat). | Lung va 2 ben het manh vun 7 mau. |
 
 ---
@@ -80,7 +80,7 @@ Dat video vao `chars/<ma>/video.mp4` (vd `chars/012/video.mp4`), mo Git Bash o t
 ```bash
 MATTE=key bash scripts/batch_char.sh 012
 ```
-Tu dong: loc anh -> COLMAP 720 -> do mau nen + tach nen -> train 1080 -> cat nguoi.
+Tu dong: loc anh -> do mau nen + tach nen -> COLMAP tren nguoi (1080) -> train 1080 -> cat nguoi.
 - It/nhieu anh hon: `PICK_MIN=0.4 PICK_MAX=0.55` (~75 anh), mac dinh 0.5/0.62 (~160 anh).
 - Ket qua: `GSplats/c012/person/c012_person.ply` (+ `.json`: dung nguoi day 1.6 m).
 - Nhat ky: `chars/012/batch.log`. Chay lai lenh se tiep tuc tu buoc dang do.
@@ -106,7 +106,7 @@ Trong Houdini: file ply qua `bakegsplat`, xoay `+90 do quanh X` (undo COLMAP), r
 |---|---|
 | `scripts/pick_frames.py` | loc anh net, trung 30-60 % |
 | `scripts/batch_char.sh` | buoc 3 (goi cac script ben duoi) |
-| `scripts/batch_dataset.py` | dataset raw/guide/screen/final |
+| `scripts/batch_dataset.py` | dataset guide/screen/masked (va raw/final cho nhanh LTX cu) |
 | `scripts/gs_colmap_ai.py`, `orbit_solve.py` | COLMAP |
 | `scripts/batch_grade.py` | tach nen xanh trong Houdini COP |
 | `scripts/h22_train_gsplats.py` | train 3DGS bang Houdini 22 |
