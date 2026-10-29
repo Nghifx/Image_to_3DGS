@@ -1,6 +1,7 @@
 @echo off
 rem GSplat Studio - moi truong cho NVIDIA Fixer (tools\fixer_venv). Chay 1 lan sau setup.bat, can Internet (~4 GB).
-rem Fixer = tools\Fixer (code + models, co san trong goi). torch cu128; cosmos-predict2 cai --no-deps vi
+rem Fixer = tools\Fixer (code: git clone nv-tlabs/Fixer, models: Hugging Face nvidia/Fixer - xem README; trong goi
+rem zip noi bo thi co san). torch cu128; cosmos-predict2 cai --no-deps vi
 rem transformer-engine / megatron-core khong build duoc tren Windows (tools\Fixer\win_shims thay the).
 cd /d "%~dp0"
 if not exist tools\fixer_venv\Scripts\python.exe py -3.13 -m venv tools\fixer_venv || python -m venv tools\fixer_venv
