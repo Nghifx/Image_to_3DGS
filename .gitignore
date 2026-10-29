@@ -1,0 +1,19 @@
+# built by setup.bat / setup_fixer.bat / Houdini
+tools/venv/
+tools/fixer_venv/
+tools/ffmpeg/
+tools/models/
+tools/Fixer/*
+!tools/Fixer/win_shims/
+!tools/Fixer/requirements_fixer_win.txt
+tools/Fixer_src/
+ml/
+# per-character work and results
+chars/
+data/
+colmap/
+GSplats/
+output/
+logs/
+__pycache__/
+*.bak*

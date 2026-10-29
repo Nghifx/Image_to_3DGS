@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pythonPanelDocument>
+  <interface name="gsplat_studio" label="GSplat Studio" icon="SOP_bakegsplat" showNetworkNavigationBar="false" help_url="">
+    <script><![CDATA[import gsplat_studio.panel as gss_panel
+
+
+def onCreateInterface():
+    import importlib
+    from gsplat_studio import config, preview, runner
+    for mod in (config, runner, preview, gss_panel):
+        importlib.reload(mod)
+    return gss_panel.GSplatStudio()
+]]></script>
+    <includeInPaneTabMenu menu_position="0" create_separator="false"/>
+    <help><![CDATA[Video 360 -> Gaussian splat trong 4 buoc: nhap video, tach nen, COLMAP, train.]]></help>
+  </interface>
+  <interface name="gsplat_studio_object" label="GSplat Studio - Object" icon="SOP_bakegsplat" showNetworkNavigationBar="false" help_url="">
+    <script><![CDATA[import gsplat_studio.panel_object as gss_object
+
+
+def onCreateInterface():
+    import importlib
+    importlib.reload(gss_object)
+    return gss_object.GSplatStudio()
+]]></script>
+    <includeInPaneTabMenu menu_position="1" create_separator="false"/>
+    <help><![CDATA[Render mot object trong canh 360 do roi hoc splat.]]></help>
+  </interface>
+</pythonPanelDocument>
